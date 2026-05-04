@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ESD Module 6 – Embedded Networking Protocols</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --bg2: #181c27;
+    --bg3: #1e2235;
+    --card: #242840;
+    --border: rgba(255,255,255,0.08);
+    --text: #e8eaf0;
+    --muted: #8b90a8;
+    --accent1: #4f8ef7;
+    --accent2: #36d9b8;
+    --accent3: #f7c948;
+    --accent4: #f76d8e;
+    --accent5: #a78bfa;
+    --accent6: #fb923c;
+    --green: #4ade80;
+    --red: #f87171;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 15px; line-height: 1.6; }
+  
+  /* Header */
+  .header { background: linear-gradient(135deg, #0d1321 0%, #1a1f35 100%); padding: 2rem 1.5rem 1.5rem; border-bottom: 1px solid var(--border); }
+  .header h1 { font-size: 1.6rem; font-weight: 700; color: var(--accent1); letter-spacing: -0.5px; }
+  .header p { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
+  
+  /* Tab Nav */
+  .tab-nav { display: flex; gap: 4px; padding: 1rem 1rem 0; overflow-x: auto; background: var(--bg2); border-bottom: 1px solid var(--border); flex-wrap: wrap; }
+  .tab-btn { padding: 0.5rem 1rem; border: none; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 0.82rem; font-weight: 600; background: transparent; color: var(--muted); transition: all 0.2s; white-space: nowrap; border-bottom: 3px solid transparent; }
+  .tab-btn:hover { color: var(--text); background: var(--bg3); }
+  .tab-btn.active { color: #fff; border-bottom-color: var(--tab-color, var(--accent1)); background: var(--bg3); }
+  
+  /* Content */
+  .tab-content { display: none; padding: 1.5rem; max-width: 960px; margin: 0 auto; }
+  .tab-content.active { display: block; }
+
+  /* Protocol colors */
+  .t-i2c { --tab-color: #4f8ef7; --proto-color: #4f8ef7; }
+  .t-can { --tab-color: #f7c948; --proto-color: #f7c948; }
+  .t-zigbee { --tab-color: #36d9b8; --proto-color: #36d9b8; }
+  .t-bt { --tab-color: #a78bfa; --proto-color: #a78bfa; }
+  .t-wifi { --tab-color: #fb923c; --proto-color: #fb923c; }
+  .t-spi { --tab-color: #f76d8e; --proto-color: #f76d8e; }
+  .t-rs { --tab-color: #4ade80; --proto-color: #4ade80; }
+
+  /* Section headings */
+  .proto-title { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.5rem; padding-bottom: 0.75rem; border-bottom: 1px solid var(--border); }
+  .proto-badge { background: var(--proto-color, var(--accent1)); color: #000; padding: 0.25rem 0.75rem; border-radius: 20px; font-size: 0.75rem; font-weight: 700; }
+  .proto-title h2 { font-size: 1.4rem; font-weight: 700; color: var(--text); }
+
+  /* Grid */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  @media (max-width: 600px) { .grid2, .grid3 { grid-template-columns: 1fr; } }
+
+  /* Cards */
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; }
+  .card h3 { font-size: 0.85rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--proto-color, var(--accent1)); margin-bottom: 0.75rem; }
+  .card p { color: var(--muted); font-size: 0.9rem; line-height: 1.65; }
+
+  /* Analogy box */
+  .analogy { background: var(--bg3); border-left: 4px solid var(--proto-color, var(--accent1)); border-radius: 0 10px 10px 0; padding: 1rem 1.25rem; margin-bottom: 1rem; }
+  .analogy .label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--proto-color, var(--accent1)); margin-bottom: 0.4rem; }
+  .analogy p { font-size: 0.95rem; color: var(--text); }
+
+  /* Steps */
+  .steps { list-style: none; display: flex; flex-direction: column; gap: 0.6rem; }
+  .steps li { display: flex; gap: 0.75rem; align-items: flex-start; font-size: 0.9rem; }
+  .step-num { min-width: 26px; height: 26px; border-radius: 50%; background: var(--proto-color, var(--accent1)); color: #000; font-weight: 700; font-size: 0.78rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+  .step-text { color: var(--muted); padding-top: 2px; }
+  .step-text strong { color: var(--text); }
+
+  /* Specs table */
+  .specs-table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+  .specs-table th { text-align: left; padding: 0.5rem 0.75rem; background: var(--bg3); color: var(--muted); font-weight: 600; font-size: 0.78rem; text-transform: uppercase; border-bottom: 1px solid var(--border); }
+  .specs-table td { padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text); }
+  .specs-table tr:last-child td { border-bottom: none; }
+  .specs-table td:first-child { color: var(--muted); font-size: 0.85rem; }
+  .specs-table td:last-child { font-weight: 500; color: var(--proto-color, var(--accent1)); }
+
+  /* Pros/Cons */
+  .pro-con { display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.88rem; }
+  .pro { color: var(--green); display: flex; gap: 0.5rem; }
+  .pro::before { content: '✓'; font-weight: 700; }
+  .con { color: var(--red); display: flex; gap: 0.5rem; }
+  .con::before { content: '✗'; font-weight: 700; }
+
+  /* Frame diagram */
+  .frame-box { display: flex; flex-wrap: wrap; gap: 3px; margin: 0.75rem 0; }
+  .frame-field { text-align: center; padding: 0.5rem 0.25rem; border-radius: 6px; font-size: 0.7rem; font-weight: 600; flex: 1; min-width: 36px; background: var(--bg3); border: 1px solid var(--border); color: var(--text); }
+  .frame-field.hi { background: var(--proto-color, var(--accent1)); color: #000; border-color: transparent; }
+
+  /* SVG diagrams */
+  .diagram { background: var(--bg3); border: 1px solid var(--border); border-radius: 12px; padding: 1rem; margin: 1rem 0; overflow: auto; }
+
+  /* Memory tip */
+  .mem-tip { background: rgba(247,201,72,0.08); border: 1px solid rgba(247,201,72,0.25); border-radius: 10px; padding: 1rem; margin: 1rem 0; font-size: 0.88rem; }
+  .mem-tip strong { color: var(--accent3); display: block; margin-bottom: 0.3rem; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.05em; }
+
+  /* Comparison table */
+  .compare { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+  .compare th { background: var(--bg3); padding: 0.6rem 0.75rem; text-align: left; color: var(--muted); font-size: 0.75rem; text-transform: uppercase; border: 1px solid var(--border); }
+  .compare td { padding: 0.55rem 0.75rem; border: 1px solid var(--border); color: var(--text); }
+  .compare tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+
+  .section-label { font-size: 0.78rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--proto-color, var(--accent1)); margin: 1.25rem 0 0.5rem; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>📡 ESD Module 6 — Embedded Networking Protocols</h1>
+  <p>BCSE305L · VIT University · Dr. Sritama Roy · Complete Study Guide</p>
+</div>
+
+<!-- Tab Navigation -->
+<div class="tab-nav">
+  <button class="tab-btn t-i2c active" onclick="showTab('i2c', this)">I²C</button>
+  <button class="tab-btn t-can" onclick="showTab('can', this)">CAN Bus</button>
+  <button class="tab-btn t-zigbee" onclick="showTab('zigbee', this)">ZigBee</button>
+  <button class="tab-btn t-bt" onclick="showTab('bt', this)">Bluetooth</button>
+  <button class="tab-btn t-wifi" onclick="showTab('wifi', this)">Wi-Fi</button>
+  <button class="tab-btn t-spi" onclick="showTab('spi', this)">SPI</button>
+  <button class="tab-btn t-rs" onclick="showTab('rs', this)">RS-232</button>
+  <button class="tab-btn" style="--tab-color:#8b90a8" onclick="showTab('compare', this)">📊 Compare All</button>
+</div>
+
+<!-- ===== I2C ===== -->
+<div id="tab-i2c" class="tab-content t-i2c active">
+  <div class="proto-title">
+    <span class="proto-badge">I²C</span>
+    <h2>Inter-Integrated Circuit</h2>
+  </div>
+
+  <div class="analogy">
+    <div class="label">🧠 Easy Analogy</div>
+    <p>Think of I²C like a <strong>classroom</strong>: The teacher (master) calls a student's name (7-bit address) and only that student (slave) responds. Two phone lines only — one to speak (SDA), one to keep rhythm (SCL).</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Quick Facts</h3>
+      <table class="specs-table">
+        <tr><td>Invented by</td><td>Philips Semiconductor (1989)</td></tr>
+        <tr><td>Wires</td><td>2 — SDA + SCL</td></tr>
+        <tr><td>Mode</td><td>Synchronous, Serial</td></tr>
+        <tr><td>Addressing</td><td>7-bit or 10-bit</td></tr>
+        <tr><td>Topology</td><td>Multi-master, Multi-slave</td></tr>
+        <tr><td>Communication</td><td>Half-duplex</td></tr>
+        <tr><td>Clock</td><td>Controlled by Master</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>The Two Wires</h3>
+      <p style="margin-bottom:0.75rem"><span style="color:#4f8ef7;font-weight:700">SDA</span> (Serial Data Line) — Bidirectional. Carries actual data between master and slave.</p>
+      <p style="margin-bottom:0.75rem"><span style="color:#36d9b8;font-weight:700">SCL</span> (Serial Clock Line) — Clock signal, always generated by the master.</p>
+      <p style="font-size:0.82rem;color:var(--muted);margin-top:0.75rem">Both lines use <strong>pull-up resistors</strong>. Devices communicate by pulling lines LOW (open-drain logic).</p>
+      <div style="margin-top:0.75rem;background:var(--bg3);padding:0.6rem;border-radius:8px;font-size:0.82rem;color:var(--muted)">
+        Arduino pins: SDA → A4, SCL → A5
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">📦 How Data is Transferred</div>
+  <div class="card" style="margin-bottom:1rem">
+    <h3>I²C Frame Structure</h3>
+    <div class="frame-box">
+      <div class="frame-field hi">START</div>
+      <div class="frame-field">7-bit Address</div>
+      <div class="frame-field">R/W bit</div>
+      <div class="frame-field hi">ACK</div>
+      <div class="frame-field">8-bit Data</div>
+      <div class="frame-field hi">ACK</div>
+      <div class="frame-field">… more data</div>
+      <div class="frame-field hi">STOP</div>
+    </div>
+    <p style="font-size:0.8rem;color:var(--muted);margin-top:0.5rem">Each message = Address Frame + one or more Data Frames, wrapped with START and STOP conditions.</p>
+  </div>
+
+  <div class="section-label">🔢 6 Steps of I²C Transmission</div>
+  <div class="card" style="margin-bottom:1rem">
+    <ul class="steps">
+      <li><span class="step-num">1</span><span class="step-text"><strong>START condition:</strong> Master pulls SDA LOW while SCL is HIGH — alerts all slaves.</span></li>
+      <li><span class="step-num">2</span><span class="step-text"><strong>Address frame:</strong> Master sends 7-bit address + R/W bit to identify target slave.</span></li>
+      <li><span class="step-num">3</span><span class="step-text"><strong>Address ACK:</strong> Matching slave pulls SDA LOW (ACK). Non-matching slaves keep SDA HIGH.</span></li>
+      <li><span class="step-num">4</span><span class="step-text"><strong>Data transfer:</strong> Master sends (or receives) data frames, 8 bits at a time.</span></li>
+      <li><span class="step-num">5</span><span class="step-text"><strong>Data ACK:</strong> Receiver sends ACK bit after each successful 8-bit data frame.</span></li>
+      <li><span class="step-num">6</span><span class="step-text"><strong>STOP condition:</strong> Master pulls SCL HIGH, then SDA HIGH — communication ends.</span></li>
+    </ul>
+  </div>
+
+  <div class="diagram">
+    <svg width="100%" viewBox="0 0 700 160">
+      <text x="20" y="25" fill="#4f8ef7" font-size="12" font-weight="700">SDA</text>
+      <text x="20" y="95" fill="#36d9b8" font-size="12" font-weight="700">SCL</text>
+      <!-- SDA line -->
+      <polyline points="60,20 80,20 80,50 140,50 140,20 200,20 200,50 240,50 240,20 280,20 280,50 320,50 320,20 380,20 380,50 420,50 420,20 460,20 460,50 500,50 500,20 540,20" fill="none" stroke="#4f8ef7" stroke-width="2"/>
+      <!-- SCL line -->
+      <polyline points="60,90 80,90 80,110 100,110 100,90 120,90 120,110 140,110 140,90 200,90 200,110 220,110 220,90 300,90 300,110 320,110 320,90 400,90 400,110 420,110 420,90 500,90 500,110 520,110 520,90" fill="none" stroke="#36d9b8" stroke-width="2"/>
+      <!-- Labels -->
+      <text x="75" y="145" fill="#8b90a8" font-size="10" text-anchor="middle">START</text>
+      <text x="170" y="145" fill="#e8eaf0" font-size="10" text-anchor="middle">Address</text>
+      <text x="260" y="145" fill="#4f8ef7" font-size="10" text-anchor="middle">ACK</text>
+      <text x="360" y="145" fill="#e8eaf0" font-size="10" text-anchor="middle">Data</text>
+      <text x="460" y="145" fill="#4f8ef7" font-size="10" text-anchor="middle">ACK</text>
+      <text x="530" y="145" fill="#8b90a8" font-size="10" text-anchor="middle">STOP</text>
+      <line x1="75" y1="130" x2="75" y2="135" stroke="#8b90a8" stroke-width="1"/>
+      <line x1="170" y1="130" x2="170" y2="135" stroke="#8b90a8" stroke-width="1"/>
+      <line x1="260" y1="130" x2="260" y2="135" stroke="#8b90a8" stroke-width="1"/>
+      <line x1="360" y1="130" x2="360" y2="135" stroke="#8b90a8" stroke-width="1"/>
+      <line x1="460" y1="130" x2="460" y2="135" stroke="#8b90a8" stroke-width="1"/>
+      <line x1="530" y1="130" x2="530" y2="135" stroke="#8b90a8" stroke-width="1"/>
+    </svg>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>✅ Advantages</h3>
+      <div class="pro-con">
+        <span class="pro">Only 2 wires needed</span>
+        <span class="pro">Multi-master & multi-slave support</span>
+        <span class="pro">ACK/NACK for error detection</span>
+        <span class="pro">Works with slow and fast ICs</span>
+        <span class="pro">Chip addressing (no extra CS pin)</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>❌ Disadvantages</h3>
+      <div class="pro-con">
+        <span class="con">Slower than SPI</span>
+        <span class="con">Pull-up resistors cause power dissipation</span>
+        <span class="con">Hardware complexity in multi-master</span>
+        <span class="con">Frame overhead from ACK/address bits</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mem-tip">
+    <strong>💡 Memory Trick</strong>
+    I²C = "I Communicate" with just 2 wires. SDA = "Say Data Aloud". SCL = "Set Clock Level". Master always controls the clock!
+  </div>
+</div>
+
+<!-- ===== CAN ===== -->
+<div id="tab-can" class="tab-content t-can">
+  <div class="proto-title">
+    <span class="proto-badge">CAN</span>
+    <h2>Controller Area Network</h2>
+  </div>
+
+  <div class="analogy">
+    <div class="label">🧠 Easy Analogy</div>
+    <p>CAN is like a <strong>school announcement system</strong>: One speaker (bus) reaches every class (ECU). Each announcement has an ID. You listen only if the ID matches yours. No one is "the master" — anyone can speak when the speaker is free!</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Quick Facts</h3>
+      <table class="specs-table">
+        <tr><td>Used in</td><td>Automobiles, industrial control</td></tr>
+        <tr><td>Wires</td><td>2 — CAN_H + CAN_L</td></tr>
+        <tr><td>Architecture</td><td>Multi-master (no master-slave)</td></tr>
+        <tr><td>Max Speed</td><td>1 Mbit/s @ 40m</td></tr>
+        <tr><td>ID (Standard)</td><td>11-bit identifier</td></tr>
+        <tr><td>ID (Extended)</td><td>29-bit identifier</td></tr>
+        <tr><td>OSI Layers used</td><td>Physical + Data Link (2 layers)</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Why CAN in Cars?</h3>
+      <p style="margin-bottom:0.75rem;font-size:0.88rem">Cars have 70+ ECUs controlling ABS, airbags, AC, gear control, etc. Point-to-point wiring would be a mess!</p>
+      <p style="margin-bottom:0.6rem;font-size:0.88rem">CAN solves this with <strong>one shared bus:</strong></p>
+      <div class="pro-con" style="font-size:0.85rem">
+        <span class="pro">Simple — one bus for all</span>
+        <span class="pro">Robust against EM interference</span>
+        <span class="pro">Priority-based message access</span>
+        <span class="pro">Nodes can be added anytime</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">📦 Standard CAN Frame (11-bit)</div>
+  <div class="card" style="margin-bottom:1rem">
+    <div class="frame-box">
+      <div class="frame-field hi">SOF<br><span style="font-size:0.65rem">1 bit</span></div>
+      <div class="frame-field" style="flex:2">Identifier<br><span style="font-size:0.65rem">11 bits</span></div>
+      <div class="frame-field">RTR<br><span style="font-size:0.65rem">1 bit</span></div>
+      <div class="frame-field">IDE<br><span style="font-size:0.65rem">1 bit</span></div>
+      <div class="frame-field">r0<br><span style="font-size:0.65rem">1 bit</span></div>
+      <div class="frame-field hi">DLC<br><span style="font-size:0.65rem">4 bits</span></div>
+      <div class="frame-field" style="flex:3">Data<br><span style="font-size:0.65rem">0–64 bits</span></div>
+      <div class="frame-field hi">CRC<br><span style="font-size:0.65rem">15+1 bits</span></div>
+      <div class="frame-field">ACK<br><span style="font-size:0.65rem">2 bits</span></div>
+      <div class="frame-field">EOF<br><span style="font-size:0.65rem">7 bits</span></div>
+      <div class="frame-field">IFS<br><span style="font-size:0.65rem">3 bits</span></div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.75rem;font-size:0.82rem">
+      <div><span style="color:var(--accent3);font-weight:600">SOF</span> — Start of Frame (dominant bit = 0)</div>
+      <div><span style="color:var(--accent3);font-weight:600">RTR</span> — Remote Transmission Request (data vs remote frame)</div>
+      <div><span style="color:var(--accent3);font-weight:600">IDE</span> — Identifier Extension (standard=0 / extended=1)</div>
+      <div><span style="color:var(--accent3);font-weight:600">DLC</span> — Data Length Code (number of bytes)</div>
+      <div><span style="color:var(--accent3);font-weight:600">CRC</span> — Error detection checksum (16 bits)</div>
+      <div><span style="color:var(--accent3);font-weight:600">IFS</span> — Inter Frame Space (3 recessive bits)</div>
+    </div>
+  </div>
+
+  <div class="section-label">📋 4 Types of CAN Frames</div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Data Frame</h3>
+      <p style="font-size:0.88rem">Most common. Transmits data from one node to another. Contains: Arbitration + Control + Data + CRC + ACK + EOF fields.</p>
+    </div>
+    <div class="card">
+      <h3>Remote Frame</h3>
+      <p style="font-size:0.88rem">Requests data from another node. Same as data frame but <strong>no data field</strong>. RTR bit is recessive (1).</p>
+    </div>
+    <div class="card">
+      <h3>Error Frame</h3>
+      <p style="font-size:0.88rem">Sent when a node detects an error. Contains Error Flag (dominant bits) + Error Delimiter (8 recessive bits). Aborts current transmission.</p>
+    </div>
+    <div class="card">
+      <h3>Overload Frame</h3>
+      <p style="font-size:0.88rem">Adds extra delay between messages. Sent when a node is too busy. Looks like error frame but signals "not ready".</p>
+    </div>
+  </div>
+
+  <div class="section-label">🔧 Key Concepts</div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Bit Stuffing</h3>
+      <p style="font-size:0.88rem">After 5 consecutive identical bits, an opposite bit is inserted. Ensures clock synchronization and prevents data from looking like a control pattern. Slightly increases message length but ensures integrity.</p>
+      <p style="font-size:0.82rem;color:var(--muted);margin-top:0.5rem">Example: 11111 → 111110 (stuffed bit added)</p>
+    </div>
+    <div class="card">
+      <h3>Arbitration (Priority)</h3>
+      <p style="font-size:0.88rem">When multiple nodes transmit, <strong>lowest ID wins</strong> (dominant bit = 0 wins over recessive 1). Higher priority messages get bus access. Losing nodes automatically retry later.</p>
+      <p style="font-size:0.82rem;color:var(--muted);margin-top:0.5rem">Non-destructive arbitration = no data lost!</p>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>CAN Error Types</h3>
+      <div class="pro-con">
+        <span class="con" style="color:var(--muted)">Bit Error — bit corrupted on bus</span>
+        <span class="con" style="color:var(--muted)">Bit Stuffing Error — extra bits detected</span>
+        <span class="con" style="color:var(--muted)">CRC Error — checksum mismatch</span>
+        <span class="con" style="color:var(--muted)">ACK Error — no acknowledgement received</span>
+        <span class="con" style="color:var(--muted)">Form Error — fixed-form field violated</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>CAN Architecture (OSI)</h3>
+      <p style="font-size:0.85rem">CAN only uses <strong>2 of 7 OSI layers:</strong></p>
+      <ul style="margin-top:0.5rem;font-size:0.85rem;color:var(--muted);list-style:disc;padding-left:1.2rem;line-height:2">
+        <li><strong style="color:var(--text)">Data Link Layer</strong> — LLC (message filtering) + MAC (framing, arbitration, ACK)</li>
+        <li><strong style="color:var(--text)">Physical Layer</strong> — CAN transceiver handles encoding/decoding on bus</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mem-tip">
+    <strong>💡 Memory Trick — CAN frame fields</strong>
+    "<strong>S</strong>ome <strong>I</strong>gnore <strong>R</strong>epetitive <strong>D</strong>ata, <strong>C</strong>heck <strong>A</strong>ll <strong>E</strong>rrors <strong>I</strong>nside <strong>F</strong>rame" → SOF, ID, RTR, DLC, Data, CRC, ACK, EOF, IFS
+  </div>
+</div>
+
+<!-- ===== ZIGBEE ===== -->
+<div id="tab-zigbee" class="tab-content t-zigbee">
+  <div class="proto-title">
+    <span class="proto-badge">ZigBee</span>
+    <h2>ZigBee Protocol</h2>
+  </div>
+
+  <div class="analogy">
+    <div class="label">🧠 Easy Analogy</div>
+    <p>ZigBee is like a <strong>relay race</strong> for tiny messages: A coordinator starts the race, routers pass the baton, and end devices receive the baton and rest (sleep to save battery). Perfect for IoT sensors that just need to send a small update every now and then!</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Quick Facts</h3>
+      <table class="specs-table">
+        <tr><td>Standard</td><td>IEEE 802.15.4</td></tr>
+        <tr><td>Frequency</td><td>2.4 GHz worldwide</td></tr>
+        <tr><td>Data Rate</td><td>250 kbps</td></tr>
+        <tr><td>Range</td><td>10–100m indoor, 300m outdoor</td></tr>
+        <tr><td>Network size</td><td>Up to 65,000 nodes</td></tr>
+        <tr><td>Security</td><td>AES-128 encryption</td></tr>
+        <tr><td>Network join</td><td>~30 seconds</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Why ZigBee over Bluetooth/WiFi?</h3>
+      <p style="font-size:0.88rem;margin-bottom:0.75rem">Bluetooth and Wi-Fi consume too much power for sensor networks. ZigBee is purpose-built for:</p>
+      <div class="pro-con">
+        <span class="pro">Ultra-low power consumption</span>
+        <span class="pro">Large mesh networks (65K nodes)</span>
+        <span class="pro">Very low data rate (sensors only need small packets)</span>
+        <span class="pro">Low cost per device</span>
+        <span class="pro">Ideal for WSN and IoT</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">🌐 3 Types of ZigBee Devices</div>
+  <div class="grid3">
+    <div class="card">
+      <h3 style="color:#36d9b8">Coordinator</h3>
+      <ul style="font-size:0.85rem;color:var(--muted);list-style:disc;padding-left:1.1rem;line-height:1.9">
+        <li>Root of the network</li>
+        <li><strong style="color:var(--text)">One per network</strong></li>
+        <li>Channel selection</li>
+        <li>Assigns node IDs &amp; addresses</li>
+        <li>Always awake (powered)</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="color:#36d9b8">Router</h3>
+      <ul style="font-size:0.85rem;color:var(--muted);list-style:disc;padding-left:1.1rem;line-height:1.9">
+        <li>Intermediate node</li>
+        <li>Routes traffic between nodes</li>
+        <li>Allows end devices to join</li>
+        <li>Always on (powered)</li>
+        <li>Extends network range</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3 style="color:#36d9b8">End Device</h3>
+      <ul style="font-size:0.85rem;color:var(--muted);list-style:disc;padding-left:1.1rem;line-height:1.9">
+        <li>Sensor/actuator nodes</li>
+        <li>Can sleep to save battery</li>
+        <li>Traffic routed via parent</li>
+        <li>Battery-operated</li>
+        <li>Simplest device type</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-label">🔗 Network Topologies</div>
+  <div class="diagram">
+    <svg width="100%" viewBox="0 0 700 200">
+      <!-- STAR topology -->
+      <text x="90" y="22" fill="#36d9b8" font-size="12" font-weight="700" text-anchor="middle">Star</text>
+      <circle cx="90" cy="100" r="18" fill="#1d6e5a" stroke="#36d9b8" stroke-width="1.5"/>
+      <text x="90" y="105" fill="#36d9b8" font-size="9" font-weight="700" text-anchor="middle">COORD</text>
+      <circle cx="40" cy="50" r="12" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="40" y="54" fill="#8b90a8" font-size="8" text-anchor="middle">END</text>
+      <circle cx="40" cy="150" r="12" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="40" y="154" fill="#8b90a8" font-size="8" text-anchor="middle">END</text>
+      <circle cx="140" cy="50" r="12" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="140" y="54" fill="#8b90a8" font-size="8" text-anchor="middle">END</text>
+      <circle cx="140" cy="150" r="12" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="140" y="154" fill="#8b90a8" font-size="8" text-anchor="middle">END</text>
+      <line x1="72" y1="85" x2="52" y2="62" stroke="#36d9b8" stroke-width="1" stroke-opacity="0.6"/>
+      <line x1="72" y1="115" x2="52" y2="138" stroke="#36d9b8" stroke-width="1" stroke-opacity="0.6"/>
+      <line x1="108" y1="85" x2="128" y2="62" stroke="#36d9b8" stroke-width="1" stroke-opacity="0.6"/>
+      <line x1="108" y1="115" x2="128" y2="138" stroke="#36d9b8" stroke-width="1" stroke-opacity="0.6"/>
+
+      <!-- TREE topology -->
+      <text x="340" y="22" fill="#36d9b8" font-size="12" font-weight="700" text-anchor="middle">Tree</text>
+      <circle cx="340" cy="50" r="18" fill="#1d6e5a" stroke="#36d9b8" stroke-width="1.5"/>
+      <text x="340" y="54" fill="#36d9b8" font-size="9" font-weight="700" text-anchor="middle">COORD</text>
+      <circle cx="270" cy="110" r="14" fill="#1a2e40" stroke="#4f8ef7" stroke-width="1.5"/>
+      <text x="270" y="114" fill="#4f8ef7" font-size="8" font-weight="600" text-anchor="middle">ROUTER</text>
+      <circle cx="410" cy="110" r="14" fill="#1a2e40" stroke="#4f8ef7" stroke-width="1.5"/>
+      <text x="410" y="114" fill="#4f8ef7" font-size="8" font-weight="600" text-anchor="middle">ROUTER</text>
+      <circle cx="240" cy="170" r="10" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="240" y="174" fill="#8b90a8" font-size="7" text-anchor="middle">END</text>
+      <circle cx="300" cy="170" r="10" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="300" y="174" fill="#8b90a8" font-size="7" text-anchor="middle">END</text>
+      <circle cx="380" cy="170" r="10" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="380" y="174" fill="#8b90a8" font-size="7" text-anchor="middle">END</text>
+      <circle cx="440" cy="170" r="10" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="440" y="174" fill="#8b90a8" font-size="7" text-anchor="middle">END</text>
+      <line x1="325" y1="65" x2="282" y2="97" stroke="#4f8ef7" stroke-width="1" stroke-opacity="0.7"/>
+      <line x1="355" y1="65" x2="398" y2="97" stroke="#4f8ef7" stroke-width="1" stroke-opacity="0.7"/>
+      <line x1="263" y1="123" x2="246" y2="160" stroke="#8b90a8" stroke-width="1" stroke-opacity="0.6"/>
+      <line x1="277" y1="123" x2="296" y2="160" stroke="#8b90a8" stroke-width="1" stroke-opacity="0.6"/>
+      <line x1="403" y1="123" x2="386" y2="160" stroke="#8b90a8" stroke-width="1" stroke-opacity="0.6"/>
+      <line x1="417" y1="123" x2="434" y2="160" stroke="#8b90a8" stroke-width="1" stroke-opacity="0.6"/>
+
+      <!-- MESH label -->
+      <text x="600" y="22" fill="#36d9b8" font-size="12" font-weight="700" text-anchor="middle">Mesh</text>
+      <circle cx="580" cy="70" r="12" fill="#1a2e40" stroke="#4f8ef7" stroke-width="1.5"/>
+      <text x="580" y="74" fill="#4f8ef7" font-size="8" text-anchor="middle">R</text>
+      <circle cx="630" cy="100" r="12" fill="#1a2e40" stroke="#4f8ef7" stroke-width="1.5"/>
+      <text x="630" y="104" fill="#4f8ef7" font-size="8" text-anchor="middle">R</text>
+      <circle cx="620" cy="155" r="12" fill="#1a2e40" stroke="#4f8ef7" stroke-width="1.5"/>
+      <text x="620" y="159" fill="#4f8ef7" font-size="8" text-anchor="middle">R</text>
+      <circle cx="560" cy="140" r="12" fill="#1a2e40" stroke="#4f8ef7" stroke-width="1.5"/>
+      <text x="560" y="144" fill="#4f8ef7" font-size="8" text-anchor="middle">R</text>
+      <line x1="591" y1="76" x2="620" y2="90" stroke="#36d9b8" stroke-width="1" stroke-opacity="0.7"/>
+      <line x1="626" y1="112" x2="620" y2="143" stroke="#36d9b8" stroke-width="1" stroke-opacity="0.7"/>
+      <line x1="572" y1="128" x2="610" y2="153" stroke="#36d9b8" stroke-width="1" stroke-opacity="0.7"/>
+      <line x1="566" y1="130" x2="576" y2="82" stroke="#36d9b8" stroke-width="1" stroke-opacity="0.7"/>
+      <line x1="590" y1="67" x2="610" y2="62" stroke="#36d9b8" stroke-width="1" stroke-opacity="0.5"/>
+    </svg>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Channel Access Methods</h3>
+      <p style="font-size:0.88rem;margin-bottom:0.75rem"><strong>Contention-Based (CSMA):</strong> Device checks if channel is free. If free, transmit. If busy, wait random time then retry. (No synchronization needed)</p>
+      <p style="font-size:0.88rem"><strong>Contention-Free (GTS):</strong> Coordinator allocates Guaranteed Time Slots to devices. Each device gets dedicated time. (Beacon mode)</p>
+    </div>
+    <div class="card">
+      <h3>ZigBee Protocol Stack</h3>
+      <ul style="font-size:0.85rem;color:var(--muted);list-style:none;line-height:2">
+        <li style="background:rgba(54,217,184,0.1);padding:2px 8px;border-radius:4px;color:var(--text)">Application Layer (ZDO + APS)</li>
+        <li style="background:rgba(79,142,247,0.1);padding:2px 8px;border-radius:4px;color:var(--text)">Network Layer (NWK)</li>
+        <li style="background:rgba(247,201,72,0.1);padding:2px 8px;border-radius:4px;color:var(--text)">MAC Layer</li>
+        <li style="background:rgba(247,109,142,0.1);padding:2px 8px;border-radius:4px;color:var(--text)">Physical Layer (IEEE 802.15.4)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="mem-tip">
+    <strong>💡 Memory Trick</strong>
+    ZigBee = "ZIG ZAG paths through a mesh, saving battery like a bee that only visits necessary flowers!" 
+    3 devices: Coordinator (C = Chief), Router (R = Relay), End Device (E = Edge/Energy-saving)
+  </div>
+</div>
+
+<!-- ===== BLUETOOTH ===== -->
+<div id="tab-bt" class="tab-content t-bt">
+  <div class="proto-title">
+    <span class="proto-badge">BT</span>
+    <h2>Bluetooth Protocol</h2>
+  </div>
+
+  <div class="analogy">
+    <div class="label">🧠 Easy Analogy</div>
+    <p>Bluetooth is like a <strong>rock band with groupies</strong>: 1 master (band leader) can control up to 7 slaves (musicians). They all share one stage (2.4 GHz). Multiple bands can share a venue — that's a Scatternet!</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Quick Facts</h3>
+      <table class="specs-table">
+        <tr><td>Frequency</td><td>2.4 GHz ISM band</td></tr>
+        <tr><td>Network</td><td>Piconet (1M + 7S)</td></tr>
+        <tr><td>Address</td><td>48-bit BD_ADDR</td></tr>
+        <tr><td>ACL max rate</td><td>721 kbps</td></tr>
+        <tr><td>SCO rate</td><td>64 kbps (voice)</td></tr>
+        <tr><td>Max slaves/piconet</td><td>7 active, 255 in park mode</td></tr>
+        <tr><td>Technique</td><td>FHSS — Frequency Hopping</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Piconet vs Scatternet</h3>
+      <p style="font-size:0.88rem;margin-bottom:0.75rem"><strong style="color:#a78bfa">Piconet:</strong> 1 master + up to 7 active slaves. Slaves can only talk to the master, not to each other.</p>
+      <p style="font-size:0.88rem"><strong style="color:#a78bfa">Scatternet:</strong> Multiple piconets connected — a device acts as both a slave in one piconet and a master in another, bridging two networks.</p>
+      <div style="margin-top:0.75rem;background:var(--bg3);padding:0.6rem;border-radius:8px;font-size:0.82rem;color:var(--muted)">
+        Each device has unique 48-bit BD_ADDR (like MAC address, shown as 12-digit hex)
+      </div>
+    </div>
+  </div>
+
+  <div class="section-label">📶 Bluetooth Architecture Layers</div>
+  <div class="card" style="margin-bottom:1rem">
+    <div style="display:flex;flex-direction:column;gap:4px">
+      <div style="background:rgba(167,139,250,0.15);border:1px solid rgba(167,139,250,0.3);padding:8px 12px;border-radius:6px;font-size:0.85rem"><strong>Applications</strong> — User apps (headset, file transfer etc.)</div>
+      <div style="background:rgba(167,139,250,0.1);border:1px solid rgba(167,139,250,0.2);padding:6px 12px;border-radius:6px;font-size:0.82rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:4px">
+        <span><strong>TCS</strong> — Telephony control</span>
+        <span><strong>SDP</strong> — Service discovery</span>
+        <span><strong>RFCOMM</strong> — Serial port emulation</span>
+      </div>
+      <div style="background:rgba(79,142,247,0.12);border:1px solid rgba(79,142,247,0.25);padding:8px 12px;border-radius:6px;font-size:0.85rem"><strong>L2CAP</strong> — Logical Link Control &amp; Adaptation (multiplexing, segmentation, QoS)</div>
+      <div style="background:rgba(54,217,184,0.1);border:1px solid rgba(54,217,184,0.2);padding:8px 12px;border-radius:6px;font-size:0.85rem"><strong>LMP</strong> — Link Manager Protocol (authentication, encryption, packet sizes)</div>
+      <div style="background:rgba(247,201,72,0.1);border:1px solid rgba(247,201,72,0.2);padding:8px 12px;border-radius:6px;font-size:0.85rem"><strong>Baseband</strong> — Packet format, addressing, timing, power control (ACL + SCO links)</div>
+      <div style="background:rgba(247,109,142,0.12);border:1px solid rgba(247,109,142,0.25);padding:8px 12px;border-radius:6px;font-size:0.85rem"><strong>Radio</strong> — 2.4 GHz, frequency hopping, modulation specs</div>
+    </div>
+  </div>
+
+  <div class="section-label">🔗 Two Link Types (Baseband)</div>
+  <div class="grid2">
+    <div class="card">
+      <h3>ACL — Asynchronous Connection Less</h3>
+      <ul style="font-size:0.85rem;color:var(--muted);list-style:disc;padding-left:1.1rem;line-height:1.9">
+        <li>Packet-switched data transfer</li>
+        <li>One ACL link per slave-master pair</li>
+        <li>Used when <strong>correctness &gt; speed</strong></li>
+        <li>Max data rate: <strong>721 kbps</strong></li>
+        <li>Used for: file transfer, internet browsing</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>SCO — Synchronous Connection Oriented</h3>
+      <ul style="font-size:0.85rem;color:var(--muted);list-style:disc;padding-left:1.1rem;line-height:1.9">
+        <li>Real-time, reserved time slots</li>
+        <li>Damaged packets NOT retransmitted</li>
+        <li>Used when <strong>speed &gt; correctness</strong></li>
+        <li>Data rate: <strong>64 kbps</strong> (voice quality)</li>
+        <li>Used for: voice calls, headsets</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-label">🔄 3-Step Connection Process</div>
+  <div class="card" style="margin-bottom:1rem">
+    <ul class="steps">
+      <li><span class="step-num">1</span><span class="step-text"><strong>Inquiry:</strong> Device broadcasts to discover nearby Bluetooth devices. Responding device sends back its address and name.</span></li>
+      <li><span class="step-num">2</span><span class="step-text"><strong>Paging:</strong> One device initiates connection to a specific target using its BD_ADDR. This forms the actual link.</span></li>
+      <li><span class="step-num">3</span><span class="step-text"><strong>Connection:</strong> Device enters one of the connection modes (Active, Sniff, Hold, or Park) based on power/usage needs.</span></li>
+    </ul>
+  </div>
+
+  <div class="section-label">💤 4 Connection Modes</div>
+  <div class="grid2">
+    <div class="card">
+      <div class="pro-con">
+        <span class="pro" style="color:var(--accent2)">Active Mode — Full send/receive (max 7 slaves)</span>
+        <span class="pro" style="color:var(--accent3)">Sniff Mode — Power saving, fixed recurring slot</span>
+        <span class="con" style="color:var(--accent1)">Hold Mode — Sleep for fixed period, then wake</span>
+        <span class="con" style="color:var(--accent5)">Park Mode — Deep sleep, max 255 devices, wake only on master command</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Power Classes</h3>
+      <table class="specs-table">
+        <tr><td>Class 1</td><td>100 mW — 100 m range</td></tr>
+        <tr><td>Class 2</td><td>2.5 mW — 10 m range</td></tr>
+        <tr><td>Class 3</td><td>1 mW — 10 cm range</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="mem-tip">
+    <strong>💡 Memory Trick — Connection Modes</strong>
+    "A Shark Hunts Prey" → Active, Sniff, Hold, Park (power consumption decreases in that order!)
+  </div>
+</div>
+
+<!-- ===== WIFI ===== -->
+<div id="tab-wifi" class="tab-content t-wifi">
+  <div class="proto-title">
+    <span class="proto-badge">Wi-Fi</span>
+    <h2>Wi-Fi (IEEE 802.11)</h2>
+  </div>
+
+  <div class="analogy">
+    <div class="label">🧠 Easy Analogy</div>
+    <p>Wi-Fi is like a <strong>cell tower for your home</strong>: The Access Point (AP) is your base station. Devices connect wirelessly to it, and the AP routes traffic between devices and the internet. No wires needed!</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Quick Facts</h3>
+      <table class="specs-table">
+        <tr><td>Standard</td><td>IEEE 802.11 (WLAN)</td></tr>
+        <tr><td>Full form</td><td>Wireless Fidelity</td></tr>
+        <tr><td>AP range (indoor)</td><td>100–150 feet</td></tr>
+        <tr><td>AP range (outdoor)</td><td>300 feet</td></tr>
+        <tr><td>Max users/AP</td><td>~30 users</td></tr>
+        <tr><td>Security</td><td>WPA / WPA2 / WPA3</td></tr>
+        <tr><td>Network name</td><td>SSID (32 chars)</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>Key Components</h3>
+      <ul style="font-size:0.85rem;color:var(--muted);list-style:none;line-height:2">
+        <li><strong style="color:#fb923c">Access Point (AP)</strong> — Base station that connects wireless devices to internet</li>
+        <li><strong style="color:#fb923c">Wi-Fi Card</strong> — Internal/external adapter in device to receive/send wireless signals</li>
+        <li><strong style="color:#fb923c">SSID</strong> — Network name (up to 32 chars) to identify Wi-Fi network</li>
+        <li><strong style="color:#fb923c">WPA-PSK</strong> — Password-based encryption (WPA/WPA2/WPA3)</li>
+        <li><strong style="color:#fb923c">Hotspot</strong> — Geographic area with accessible wireless internet</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-label">🌐 Two Topologies</div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Infrastructure Mode (AP-Based)</h3>
+      <p style="font-size:0.88rem;margin-bottom:0.75rem">All communication goes through the Access Point. Device → AP → Destination.</p>
+      <div class="pro-con">
+        <span class="pro">Centrally managed</span>
+        <span class="pro">Longer range via multiple APs</span>
+        <span class="pro">Internet access through AP</span>
+        <span class="con">Requires AP hardware</span>
+        <span class="con">Single point of failure</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Ad-Hoc Mode (Peer-to-Peer)</h3>
+      <p style="font-size:0.88rem;margin-bottom:0.75rem">Devices communicate directly without an AP. Point-to-point network.</p>
+      <div class="pro-con">
+        <span class="pro">No AP needed</span>
+        <span class="pro">Quick setup</span>
+        <span class="pro">Good for device-to-device sharing</span>
+        <span class="con">Short range only</span>
+        <span class="con">No internet access</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram">
+    <svg width="100%" viewBox="0 0 700 180">
+      <!-- Infrastructure -->
+      <text x="175" y="18" fill="#fb923c" font-size="12" font-weight="700" text-anchor="middle">Infrastructure Mode</text>
+      <rect x="145" y="30" width="60" height="35" rx="6" fill="#2a1f0e" stroke="#fb923c" stroke-width="1.5"/>
+      <text x="175" y="52" fill="#fb923c" font-size="10" font-weight="700" text-anchor="middle">AP</text>
+      <circle cx="80" cy="120" r="20" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="80" y="124" fill="#8b90a8" font-size="8" text-anchor="middle">Device</text>
+      <circle cx="175" cy="130" r="20" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="175" y="134" fill="#8b90a8" font-size="8" text-anchor="middle">Device</text>
+      <circle cx="270" cy="120" r="20" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="270" y="124" fill="#8b90a8" font-size="8" text-anchor="middle">Device</text>
+      <line x1="150" y1="65" x2="98" y2="103" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="175" y1="65" x2="175" y2="110" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,3"/>
+      <line x1="200" y1="65" x2="252" y2="103" stroke="#fb923c" stroke-width="1" stroke-dasharray="4,3"/>
+      <text x="175" y="168" fill="#8b90a8" font-size="9" text-anchor="middle">All traffic through AP</text>
+
+      <!-- Divider -->
+      <line x1="355" y1="20" x2="355" y2="180" stroke="#242840" stroke-width="2"/>
+
+      <!-- Ad-hoc -->
+      <text x="535" y="18" fill="#36d9b8" font-size="12" font-weight="700" text-anchor="middle">Ad-Hoc Mode</text>
+      <circle cx="420" cy="90" r="22" fill="#1e2235" stroke="#36d9b8" stroke-width="1.5"/>
+      <text x="420" y="94" fill="#36d9b8" font-size="8" text-anchor="middle">Device</text>
+      <circle cx="530" cy="60" r="22" fill="#1e2235" stroke="#36d9b8" stroke-width="1.5"/>
+      <text x="530" y="64" fill="#36d9b8" font-size="8" text-anchor="middle">Device</text>
+      <circle cx="640" cy="90" r="22" fill="#1e2235" stroke="#36d9b8" stroke-width="1.5"/>
+      <text x="640" y="94" fill="#36d9b8" font-size="8" text-anchor="middle">Device</text>
+      <circle cx="535" cy="145" r="22" fill="#1e2235" stroke="#36d9b8" stroke-width="1.5"/>
+      <text x="535" y="149" fill="#36d9b8" font-size="8" text-anchor="middle">Device</text>
+      <line x1="442" y1="78" x2="510" y2="68" stroke="#36d9b8" stroke-width="1"/>
+      <line x1="551" y1="70" x2="620" y2="80" stroke="#36d9b8" stroke-width="1"/>
+      <line x1="533" y1="82" x2="534" y2="123" stroke="#36d9b8" stroke-width="1"/>
+      <line x1="440" y1="105" x2="516" y2="135" stroke="#36d9b8" stroke-width="1"/>
+      <text x="535" y="175" fill="#8b90a8" font-size="9" text-anchor="middle">Direct device-to-device communication</text>
+    </svg>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>✅ Advantages</h3>
+      <div class="pro-con">
+        <span class="pro">High mobility — no cables</span>
+        <span class="pro">Easy installation and flexibility</span>
+        <span class="pro">Uses unlicensed spectrum</span>
+        <span class="pro">Supports roaming between APs</span>
+        <span class="pro">Reliable and secure (WPA3)</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>❌ Limitations</h3>
+      <div class="pro-con">
+        <span class="con">Radio interference possible</span>
+        <span class="con">Performance degrades with walls/distance</span>
+        <span class="con">Higher power consumption than ZigBee/BT</span>
+        <span class="con">Limited range without multiple APs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mem-tip">
+    <strong>💡 Memory Trick</strong>
+    Wi-Fi = "Wire-Free Internet". SSID = "Say Something Identifying Data". AP = Access Point = the wireless "door" to the internet!
+  </div>
+</div>
+
+<!-- ===== SPI ===== -->
+<div id="tab-spi" class="tab-content t-spi">
+  <div class="proto-title">
+    <span class="proto-badge">SPI</span>
+    <h2>Serial Peripheral Interface</h2>
+  </div>
+
+  <div class="analogy">
+    <div class="label">🧠 Easy Analogy</div>
+    <p>SPI is like a <strong>telephone operator console</strong>: 4 dedicated lines — one to talk (MOSI), one to listen (MISO), one clock beat (SCLK), and one to "dial" a specific extension (CS/SS). Fully duplex — you can talk and listen at the same time!</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Quick Facts</h3>
+      <table class="specs-table">
+        <tr><td>Wires</td><td>4 — MOSI, MISO, SCLK, CS/SS</td></tr>
+        <tr><td>Mode</td><td>Synchronous, Full-Duplex</td></tr>
+        <tr><td>Masters</td><td>1 only</td></tr>
+        <tr><td>Slaves</td><td>Theoretically unlimited</td></tr>
+        <tr><td>Max Speed</td><td>10 Mbps</td></tr>
+        <tr><td>ACK</td><td>No acknowledgement</td></tr>
+        <tr><td>Data bits</td><td>Not limited to 8-bits</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>4 Signal Lines</h3>
+      <ul style="font-size:0.85rem;list-style:none;line-height:2.1">
+        <li><span style="color:#f76d8e;font-weight:700;min-width:65px;display:inline-block">MOSI</span> Master Out Slave In — Master → Slave data</li>
+        <li><span style="color:#f76d8e;font-weight:700;min-width:65px;display:inline-block">MISO</span> Master In Slave Out — Slave → Master data</li>
+        <li><span style="color:#f76d8e;font-weight:700;min-width:65px;display:inline-block">SCLK</span> Serial Clock — Generated by master only</li>
+        <li><span style="color:#f76d8e;font-weight:700;min-width:65px;display:inline-block">CS/SS</span> Chip Select / Slave Select — LOW = selected</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="section-label">🔄 4 Steps of SPI Communication</div>
+  <div class="card" style="margin-bottom:1rem">
+    <ul class="steps">
+      <li><span class="step-num">1</span><span class="step-text"><strong>Clock setup:</strong> Master generates the clock signal (SCLK). Data bits are synchronized to clock edges.</span></li>
+      <li><span class="step-num">2</span><span class="step-text"><strong>Slave selection:</strong> Master pulls target slave's CS/SS pin LOW to activate it. All others stay HIGH (inactive).</span></li>
+      <li><span class="step-num">3</span><span class="step-text"><strong>Data send (MOSI):</strong> Master sends data bit-by-bit on MOSI line. MSB sent first.</span></li>
+      <li><span class="step-num">4</span><span class="step-text"><strong>Data receive (MISO):</strong> Slave sends response bit-by-bit on MISO line simultaneously. LSB sent first.</span></li>
+    </ul>
+  </div>
+
+  <div class="section-label">⚙️ Two SPI Configurations</div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Independent Slave Config</h3>
+      <p style="font-size:0.88rem;margin-bottom:0.6rem">Each slave has its own dedicated CS/SS line from master. SCK, MOSI, MISO are shared.</p>
+      <div class="pro-con">
+        <span class="pro">Simple, direct control</span>
+        <span class="pro">Each slave independently selected</span>
+        <span class="con">Needs 1 CS pin per slave on master</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Daisy Chain Config</h3>
+      <p style="font-size:0.88rem;margin-bottom:0.6rem">Single SS line for all slaves. MISO of slave 1 → MOSI of slave 2 → ... → MISO of last slave → back to master.</p>
+      <div class="pro-con">
+        <span class="pro">Saves CS pins on master</span>
+        <span class="con">Data must pass through all slaves</span>
+        <span class="con">More complex timing</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram">
+    <svg width="100%" viewBox="0 0 700 160">
+      <!-- Master -->
+      <rect x="30" y="55" width="80" height="50" rx="8" fill="#2e0d1c" stroke="#f76d8e" stroke-width="2"/>
+      <text x="70" y="84" fill="#f76d8e" font-size="11" font-weight="700" text-anchor="middle">MASTER</text>
+      <!-- Slave 1 -->
+      <rect x="220" y="30" width="80" height="40" rx="6" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="260" y="55" fill="#e8eaf0" font-size="10" text-anchor="middle">Slave 1</text>
+      <!-- Slave 2 -->
+      <rect x="220" y="90" width="80" height="40" rx="6" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <text x="260" y="115" fill="#e8eaf0" font-size="10" text-anchor="middle">Slave 2</text>
+      <!-- Slave 3 -->
+      <rect x="220" y="150" width="80" height="40" rx="6" fill="#1e2235" stroke="#8b90a8" stroke-width="1"/>
+      <!-- Connection lines with labels -->
+      <line x1="110" y1="65" x2="220" y2="48" stroke="#f76d8e" stroke-width="1.5"/>
+      <line x1="110" y1="75" x2="220" y2="110" stroke="#f76d8e" stroke-width="1.5"/>
+      <!-- MOSI/MISO shared -->
+      <line x1="110" y1="80" x2="350" y2="80" stroke="#36d9b8" stroke-width="1.5"/>
+      <text x="340" y="75" fill="#36d9b8" font-size="9" text-anchor="start">MOSI/MISO (shared)</text>
+      <!-- SCLK shared -->
+      <line x1="110" y1="88" x2="350" y2="88" stroke="#f7c948" stroke-width="1.5"/>
+      <text x="340" y="98" fill="#f7c948" font-size="9" text-anchor="start">SCLK (shared)</text>
+      <!-- CS labels -->
+      <text x="155" y="62" fill="#f76d8e" font-size="9" text-anchor="middle">CS1</text>
+      <text x="155" y="106" fill="#f76d8e" font-size="9" text-anchor="middle">CS2</text>
+    </svg>
+  </div>
+
+  <div class="section-label">🕐 4 Clock Modes (CPOL + CPHA)</div>
+  <div class="card">
+    <table class="specs-table">
+      <thead><tr><th>Mode</th><th>CPOL</th><th>CPHA</th><th>Clock Idle</th><th>Data Sampled On</th></tr></thead>
+      <tbody>
+        <tr><td>Mode 0</td><td>0</td><td>0</td><td>LOW</td><td>Rising edge</td></tr>
+        <tr><td>Mode 1</td><td>0</td><td>1</td><td>LOW</td><td>Falling edge</td></tr>
+        <tr><td>Mode 2</td><td>1</td><td>0</td><td>HIGH</td><td>Falling edge</td></tr>
+        <tr><td>Mode 3</td><td>1</td><td>1</td><td>HIGH</td><td>Rising edge</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:0.8rem;color:var(--muted);margin-top:0.5rem">CPOL = Clock Polarity (idle state). CPHA = Clock Phase (when data is sampled).</p>
+  </div>
+
+  <div class="grid2" style="margin-top:1rem">
+    <div class="card">
+      <h3>✅ Advantages</h3>
+      <div class="pro-con">
+        <span class="pro">Full-duplex (simultaneous TX/RX)</span>
+        <span class="pro">Very high speed (10 Mbps)</span>
+        <span class="pro">No address bits overhead</span>
+        <span class="pro">Continuous data streaming</span>
+        <span class="pro">Simple slave addressing via CS</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>❌ Disadvantages</h3>
+      <div class="pro-con">
+        <span class="con">4 wires needed (vs 2 for I²C)</span>
+        <span class="con">Only 1 master allowed</span>
+        <span class="con">No ACK/NACK error confirmation</span>
+        <span class="con">Needs dedicated CS pin per slave</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mem-tip">
+    <strong>💡 Memory Trick — SPI pins</strong>
+    "My Music Sounds Clear" → MOSI, MISO, SCLK, CS. Or remember: Master Outputs (MOSI), Master Inputs (MISO)!
+  </div>
+</div>
+
+<!-- ===== RS-232 ===== -->
+<div id="tab-rs" class="tab-content t-rs">
+  <div class="proto-title">
+    <span class="proto-badge">RS-232</span>
+    <h2>RS-232 Serial Interface</h2>
+  </div>
+
+  <div class="analogy">
+    <div class="label">🧠 Easy Analogy</div>
+    <p>RS-232 is like a <strong>telephone call</strong>: One end is the terminal (DTE — the person speaking), the other is the modem (DCE — the phone exchange). They use a standard set of signals to start, stop, and manage the conversation.</p>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h3>Quick Facts</h3>
+      <table class="specs-table">
+        <tr><td>Full name</td><td>RS-232-C (EIA Standard)</td></tr>
+        <tr><td>Developed by</td><td>EIA + Bell Systems</td></tr>
+        <tr><td>Connection</td><td>DTE ↔ DCE</td></tr>
+        <tr><td>Type</td><td>Serial, asynchronous</td></tr>
+        <tr><td>Voltage (logic 1)</td><td>-3V to -15V</td></tr>
+        <tr><td>Voltage (logic 0)</td><td>+3V to +15V</td></tr>
+        <tr><td>Max distance</td><td>~15 meters (50 ft)</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <h3>DTE vs DCE</h3>
+      <p style="font-size:0.88rem;margin-bottom:0.75rem"><strong style="color:#4ade80">DTE (Data Terminal Equipment)</strong> — The end device, e.g., a computer, terminal, printer. Generates and consumes data.</p>
+      <p style="font-size:0.88rem"><strong style="color:#4ade80">DCE (Data Communication Equipment)</strong> — The communication device, e.g., a modem. Converts signal for transmission through the telephone network.</p>
+      <div style="margin-top:0.75rem;background:var(--bg3);padding:0.75rem;border-radius:8px;font-size:0.82rem;color:var(--muted)">
+        DTE → RS-232 interface → DCE → Telephone Network → DCE → RS-232 → DTE
+      </div>
+    </div>
+  </div>
+
+  <div class="diagram">
+    <svg width="100%" viewBox="0 0 700 120">
+      <rect x="30" y="35" width="100" height="50" rx="8" fill="#0e2417" stroke="#4ade80" stroke-width="2"/>
+      <text x="80" y="60" fill="#4ade80" font-size="11" font-weight="700" text-anchor="middle">DTE</text>
+      <text x="80" y="76" fill="#8b90a8" font-size="9" text-anchor="middle">(Computer)</text>
+
+      <rect x="195" y="35" width="100" height="50" rx="8" fill="#1e2235" stroke="#8b90a8" stroke-width="1.5"/>
+      <text x="245" y="60" fill="#e8eaf0" font-size="11" font-weight="700" text-anchor="middle">DCE</text>
+      <text x="245" y="76" fill="#8b90a8" font-size="9" text-anchor="middle">(Modem)</text>
+
+      <rect x="305" y="20" width="90" height="80" rx="10" fill="#1a1525" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="350" y="60" fill="#a78bfa" font-size="10" font-weight="600" text-anchor="middle">Telephone</text>
+      <text x="350" y="75" fill="#a78bfa" font-size="10" font-weight="600" text-anchor="middle">Network</text>
+
+      <rect x="405" y="35" width="100" height="50" rx="8" fill="#1e2235" stroke="#8b90a8" stroke-width="1.5"/>
+      <text x="455" y="60" fill="#e8eaf0" font-size="11" font-weight="700" text-anchor="middle">DCE</text>
+      <text x="455" y="76" fill="#8b90a8" font-size="9" text-anchor="middle">(Modem)</text>
+
+      <rect x="570" y="35" width="100" height="50" rx="8" fill="#0e2417" stroke="#4ade80" stroke-width="2"/>
+      <text x="620" y="60" fill="#4ade80" font-size="11" font-weight="700" text-anchor="middle">DTE</text>
+      <text x="620" y="76" fill="#8b90a8" font-size="9" text-anchor="middle">(Terminal)</text>
+
+      <line x1="130" y1="60" x2="195" y2="60" stroke="#4ade80" stroke-width="2"/>
+      <text x="163" y="53" fill="#4ade80" font-size="8" text-anchor="middle">RS-232</text>
+      <line x1="295" y1="60" x2="305" y2="60" stroke="#8b90a8" stroke-width="1.5"/>
+      <line x1="395" y1="60" x2="405" y2="60" stroke="#8b90a8" stroke-width="1.5"/>
+      <line x1="505" y1="60" x2="570" y2="60" stroke="#4ade80" stroke-width="2"/>
+      <text x="538" y="53" fill="#4ade80" font-size="8" text-anchor="middle">RS-232</text>
+    </svg>
+  </div>
+
+  <div class="section-label">📌 Key RS-232 Signals (DB-9 Connector)</div>
+  <div class="card">
+    <table class="specs-table">
+      <thead><tr><th>Signal</th><th>Pin</th><th>Direction</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td>TXD — Transmit Data</td><td>3</td><td>DTE → DCE</td><td>Serial data from DTE to DCE</td></tr>
+        <tr><td>RXD — Receive Data</td><td>2</td><td>DCE → DTE</td><td>Serial data from DCE to DTE</td></tr>
+        <tr><td>RTS — Request To Send</td><td>7</td><td>DTE → DCE</td><td>DTE wants to send data</td></tr>
+        <tr><td>CTS — Clear To Send</td><td>8</td><td>DCE → DTE</td><td>DCE ready to receive data</td></tr>
+        <tr><td>DTR — Data Terminal Ready</td><td>4</td><td>DTE → DCE</td><td>DTE is powered and ready</td></tr>
+        <tr><td>DSR — Data Set Ready</td><td>6</td><td>DCE → DTE</td><td>DCE is powered and ready</td></tr>
+        <tr><td>GND — Signal Ground</td><td>5</td><td>—</td><td>Common reference</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid2" style="margin-top:1rem">
+    <div class="card">
+      <h3>RS-232 Characteristics</h3>
+      <div class="pro-con">
+        <span class="pro">Simple hardware, widely available</span>
+        <span class="pro">Good noise immunity with voltage levels</span>
+        <span class="pro">Full-duplex (TXD and RXD)</span>
+        <span class="con">Short range (~15m)</span>
+        <span class="con">Slow speed compared to modern protocols</span>
+        <span class="con">Point-to-point only (no bus)</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Voltage Logic (Inverted!)</h3>
+      <p style="font-size:0.88rem;color:var(--muted)">RS-232 uses inverted logic compared to TTL:</p>
+      <div style="margin-top:0.75rem;font-size:0.88rem">
+        <div style="background:rgba(248,113,113,0.1);border-radius:6px;padding:6px 10px;margin-bottom:6px;color:#f87171">Logic 1 (MARK) = -3V to -15V (negative)</div>
+        <div style="background:rgba(74,222,128,0.1);border-radius:6px;padding:6px 10px;color:#4ade80">Logic 0 (SPACE) = +3V to +15V (positive)</div>
+      </div>
+      <p style="font-size:0.8rem;color:var(--muted);margin-top:0.6rem">This inversion distinguishes RS-232 from normal TTL/CMOS logic!</p>
+    </div>
+  </div>
+
+  <div class="mem-tip">
+    <strong>💡 Memory Trick — RS-232</strong>
+    DTE = Data Terminal Equipment = "Data creator" (computer). DCE = Data Communication Equipment = "Data carrier" (modem). TXD/RXD = Transmit/Receive Data. RTS/CTS = handshake pair ("Ready To Send?" → "Clear To Send!")
+  </div>
+</div>
+
+<!-- ===== COMPARISON ===== -->
+<div id="tab-compare" class="tab-content">
+  <div class="proto-title">
+    <span class="proto-badge" style="background:#8b90a8">ALL</span>
+    <h2>Protocol Comparison</h2>
+  </div>
+
+  <div class="card" style="overflow-x:auto">
+    <table class="compare">
+      <thead>
+        <tr>
+          <th>Protocol</th><th>Wires</th><th>Speed</th><th>Range</th><th>Topology</th><th>Duplex</th><th>Use Case</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td style="color:#4f8ef7;font-weight:700">I²C</td>
+          <td>2 (SDA, SCL)</td>
+          <td>400 kbps–3.4 Mbps</td>
+          <td>On-board</td>
+          <td>Multi-master Multi-slave</td>
+          <td>Half</td>
+          <td>Sensors, EEPROM, on-board ICs</td>
+        </tr>
+        <tr>
+          <td style="color:#f7c948;font-weight:700">CAN</td>
+          <td>2 (H, L)</td>
+          <td>1 Mbps @ 40m</td>
+          <td>40m–1km</td>
+          <td>Multi-master bus</td>
+          <td>Half</td>
+          <td>Automotive ECUs, industrial</td>
+        </tr>
+        <tr>
+          <td style="color:#36d9b8;font-weight:700">ZigBee</td>
+          <td>Wireless</td>
+          <td>250 kbps</td>
+          <td>10–300m</td>
+          <td>Star/Tree/Mesh</td>
+          <td>Half</td>
+          <td>IoT, WSN, smart home</td>
+        </tr>
+        <tr>
+          <td style="color:#a78bfa;font-weight:700">Bluetooth</td>
+          <td>Wireless</td>
+          <td>721 kbps–3 Mbps</td>
+          <td>10–100m</td>
+          <td>Piconet (1M+7S)</td>
+          <td>Full (ACL)</td>
+          <td>Audio, phone accessories, BLE</td>
+        </tr>
+        <tr>
+          <td style="color:#fb923c;font-weight:700">Wi-Fi</td>
+          <td>Wireless</td>
+          <td>11 Mbps–multi-Gbps</td>
+          <td>50–300m</td>
+          <td>AP-based or Ad-hoc</td>
+          <td>Full</td>
+          <td>Internet access, LAN</td>
+        </tr>
+        <tr>
+          <td style="color:#f76d8e;font-weight:700">SPI</td>
+          <td>4 (MOSI, MISO, SCLK, CS)</td>
+          <td>Up to 10 Mbps</td>
+          <td>On-board</td>
+          <td>Single master</td>
+          <td>Full</td>
+          <td>SD cards, flash, LCD, sensors</td>
+        </tr>
+        <tr>
+          <td style="color:#4ade80;font-weight:700">RS-232</td>
+          <td>Varies (9-pin)</td>
+          <td>Up to 115.2 kbps</td>
+          <td>~15m</td>
+          <td>Point-to-point</td>
+          <td>Full</td>
+          <td>Computer-modem, legacy serial</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="section-label" style="margin-top:1.5rem">⚡ Quick Differentiators (Exam Tips)</div>
+  <div class="grid2">
+    <div class="card">
+      <h3>Wired Protocols</h3>
+      <div class="pro-con" style="gap:0.6rem">
+        <span class="pro" style="color:#4f8ef7">I²C = 2 wires, multi-slave with addressing (ACK)</span>
+        <span class="pro" style="color:#f76d8e">SPI = 4 wires, fastest, full-duplex, no ACK</span>
+        <span class="pro" style="color:#f7c948">CAN = 2 wires, multi-master, automotive focus</span>
+        <span class="pro" style="color:#4ade80">RS-232 = DTE-DCE, inverted voltage levels</span>
+      </div>
+    </div>
+    <div class="card">
+      <h3>Wireless Protocols</h3>
+      <div class="pro-con" style="gap:0.6rem">
+        <span class="pro" style="color:#36d9b8">ZigBee = Lowest power, 65K nodes, mesh/IoT</span>
+        <span class="pro" style="color:#a78bfa">Bluetooth = Piconet (1M+7S), audio/pairing</span>
+        <span class="pro" style="color:#fb923c">Wi-Fi = Highest speed, internet access, WLAN</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="mem-tip" style="margin-top:1rem">
+    <strong>💡 Master Mnemonic for all protocols</strong>
+    <div style="margin-top:0.5rem;font-size:0.9rem;line-height:2">
+      <strong style="color:#4f8ef7">I</strong>²C — <strong style="color:#f76d8e">S</strong>PI — <strong style="color:#f7c948">C</strong>AN — <strong style="color:#4ade80">R</strong>S232 — <strong style="color:#a78bfa">B</strong>luetooth — <strong style="color:#36d9b8">Z</strong>igbee — <strong style="color:#fb923c">W</strong>i-Fi
+      <br>
+      "<strong style="color:var(--accent3)">I S</strong>ee <strong style="color:var(--accent3)">C</strong>ars <strong style="color:var(--accent3)">R</strong>acing, <strong style="color:var(--accent3)">B</strong>ut <strong style="color:var(--accent3)">Z</strong>ipping <strong style="color:var(--accent3)">W</strong>irelessly!"
+    </div>
+  </div>
+</div>
+
+<script>
+function showTab(id, btn) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
